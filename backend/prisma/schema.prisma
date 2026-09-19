@@ -1,0 +1,302 @@
+// ============================================
+// DATABASE SCHEMA - Mfumo wa Mabasi ya Mikoa
+// ============================================
+// Schema hii inafafanua tables zote za database yetu
+// Kila model inawakilisha table moja kwenye PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS - Orodha za maadili yaliyokubalika
+// ============================================
+
+enum UserRole {
+  PASSENGER
+  COMPANY
+  ADMIN
+}
+
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
+enum BusType {
+  ORDINARY
+  LUXURY
+  SLEEPER
+}
+
+enum BusStatus {
+  ACTIVE
+  MAINTENANCE
+  RETIRED
+}
+
+enum DriverStatus {
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum RouteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  DEPARTED
+  ARRIVED
+  CANCELLED
+}
+
+enum SeatType {
+  STANDARD
+  VIP
+  WINDOW
+  AISLE
+}
+
+enum SeatStatus {
+  AVAILABLE
+  BOOKED
+  OCCUPIED
+  MAINTENANCE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentMethod {
+  LIPA_NUMBA
+  CASH
+  PAY_ON_BOARD
+  DEMO
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum TicketStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
+// ============================================
+// MODELS - Tables za database
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String   @unique
+  password  String
+  role      UserRole @default(PASSENGER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings     Booking[]
+  company      Company?
+  adminReports AdminReport[]
+
+  @@map("users")
+}
+
+model Company {
+  id            String        @id @default(uuid())
+  name          String
+  owner         User          @relation(fields: [ownerId], references: [id])
+  ownerId       String        @unique
+  licenseNumber String        @unique
+  contactEmail  String
+  contactPhone  String
+  address       String
+  status        CompanyStatus @default(PENDING)
+  commissionRate Float        @default(5.0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  buses     Bus[]
+  drivers   Driver[]
+  routes    Route[]
+  schedules Schedule[]
+  bookings  Booking[]
+
+  @@map("companies")
+}
+
+model Bus {
+  id          String    @id @default(uuid())
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   String
+  plateNumber String    @unique
+  busType     BusType   @default(ORDINARY)
+  capacity    Int
+  amenities   String
+  status      BusStatus @default(ACTIVE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  schedules Schedule[]
+  seats     Seat[]
+
+  @@map("buses")
+}
+
+model Driver {
+  id            String       @id @default(uuid())
+  company       Company      @relation(fields: [companyId], references: [id])
+  companyId     String
+  name          String
+  licenseNumber String       @unique
+  phone         String
+  status        DriverStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  schedules Schedule[]
+
+  @@map("drivers")
+}
+
+model Route {
+  id              String      @id @default(uuid())
+  company         Company     @relation(fields: [companyId], references: [id])
+  companyId       String
+  fromRegion      String
+  toRegion        String
+  fromStop        String?
+  toStop          String?
+  distanceKm      Float
+  estimatedDuration Int
+  basePrice       Decimal
+  status          RouteStatus @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  schedules Schedule[]
+
+  @@map("routes")
+}
+
+model Schedule {
+  id            String         @id @default(uuid())
+  route         Route          @relation(fields: [routeId], references: [id])
+  routeId       String
+  bus           Bus            @relation(fields: [busId], references: [id])
+  busId         String
+  driver        Driver?        @relation(fields: [driverId], references: [id])
+  driverId      String?
+  company       Company        @relation(fields: [companyId], references: [id])
+  companyId     String
+  departureTime DateTime
+  arrivalTime   DateTime
+  availableSeats Int
+  status        ScheduleStatus @default(SCHEDULED)
+  date          DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  bookings Booking[]
+
+  @@map("schedules")
+}
+
+model Seat {
+  id         String   @id @default(uuid())
+  bus        Bus      @relation(fields: [busId], references: [id])
+  busId      String
+  seatNumber String
+  seatType   SeatType @default(STANDARD)
+  status     SeatStatus @default(AVAILABLE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("seats")
+}
+
+model Booking {
+  id               String         @id @default(uuid())
+  user             User           @relation(fields: [userId], references: [id])
+  userId           String
+  schedule         Schedule       @relation(fields: [scheduleId], references: [id])
+  scheduleId       String
+  company          Company        @relation(fields: [companyId], references: [id])
+  companyId        String
+  seatNumbers      String
+  totalPrice       Decimal
+  status           BookingStatus  @default(PENDING)
+  bookingReference String         @unique
+  passengerName    String
+  passengerPhone   String
+  passengerEmail   String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  payment Payment?
+  ticket  Ticket?
+
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  bookingId       String        @unique
+  paymentMethod   PaymentMethod
+  amount          Decimal
+  transactionId   String?
+  referenceNumber String?
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+model Ticket {
+  id            String       @id @default(uuid())
+  booking       Booking      @relation(fields: [bookingId], references: [id])
+  bookingId     String       @unique
+  ticketNumber  String       @unique
+  qrCode        String
+  status        TicketStatus @default(ACTIVE)
+  scannedAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map("tickets")
+}
+
+model AdminReport {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  reportType String
+  data       String
+  createdAt  DateTime @default(now())
+
+  @@map("admin_reports")
+}

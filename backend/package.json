@@ -1,0 +1,34 @@
+{
+  "name": "intercity-bus-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Intercity Bus System - Mfumo wa Mabasi ya Mikoa Tanzania",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "prisma db seed"
+  },
+  "keywords": ["bus", "transport", "tanzania", "booking", "ticket"],
+  "author": "Thunder Tecx",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.8",
+    "socket.io": "^4.6.1",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "prisma": "^5.10.0"
+  }
+}
